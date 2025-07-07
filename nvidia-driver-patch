@@ -1,0 +1,17 @@
+#!/usr/bin/sh
+
+# Needs to run before the bind mount as that changes the libs required by git to run properly
+# and risks host curruption.
+git clone https://github.com/keylase/nvidia-patch.git
+
+# Needs to run before the patch script as we need write access to libs.
+mount --bind /run/nvidia/driver/usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
+
+./nvidia-patch/patch.sh
+
+echo "Done, now waiting for signal"
+sleep infinity &
+trap "echo 'Caught signal'; _shutdown && { kill $!; exit 0; }" HUP INT QUIT PIPE TERM
+trap - EXIT
+while true; do wait $! || continue; done
+exit 0

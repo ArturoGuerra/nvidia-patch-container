@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nvidia-driver-patch
+  labels:
+    app.kubernetes.io/name: nvidia-driver-patch
+    app.kubernetes.io/version: "1.0"
+spec:
+  selector:
+    matchLabels:
+      name: nvidia-driver-patch
+  template:
+    metadata:
+      labels:
+        name: nvidia-driver-patch
+    spec:
+      runtimeClassName: nvidia
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
+      containers:
+        - image: ghcr.io/arturoguerra/nvidia-patch-container:latest
+          imagePullPolicy: IfNotPresent
+          name: nvidia-driver-patcher
+          volumeMounts:
+            - name: run-nvidia
+              mountPath: /run/nvidia
+              mountPropagation: Bidirectional
+              readOnly: false
+            - name: libnvidia-backup
+              mountPath: /opt/nvidia/libnvidia-encode-backup
+              mountPropagation: Bidirectional
+              readOnly: false
+          securityContext:
+            privileged: true
+      nodeSelector:
+        nvidia.com/gpu.deploy.driver: "true"
+      tolerations:
+        - effect: NoSchedule
+          key: nvidia.com/gpu
+          operator: Exists
+      volumes:
+        - name: run-nvidia
+          hostPath:
+            path: /run/nvidia
+            type: Directory
+        - name: libnvidia-backup
+          hostPath:
+            path: /opt/nvidia/libnvidia-encode-backup
+            type: DirectoryOrCreate

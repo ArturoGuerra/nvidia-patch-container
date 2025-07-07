@@ -19,9 +19,11 @@ spec:
         runAsUser: 0
         runAsGroup: 0
         fsGroup: 0
+      serviceAccount: nvidia-driver
+      serviceAccountName: nvidia-driver
       containers:
         - image: ghcr.io/arturoguerra/nvidia-patch-container:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: nvidia-driver-patcher
           volumeMounts:
             - name: run-nvidia

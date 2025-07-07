@@ -11,7 +11,7 @@ mount --bind /run/nvidia/driver/usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-g
 
 echo "Done, now waiting for signal"
 sleep infinity &
-trap "echo 'Caught signal'; _shutdown && { kill $!; exit 0; }" HUP INT QUIT PIPE TERM
+trap "echo 'Caught signal'; { kill $!; exit 0; }" HUP INT QUIT PIPE TERM
 trap - EXIT
 while true; do wait $! || continue; done
 exit 0

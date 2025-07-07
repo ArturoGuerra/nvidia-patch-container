@@ -1,17 +1,48 @@
 #!/usr/bin/sh
 
+
+PATCH_MARKER=/mnt/nvidia/driver/.patched-marker
+
 # Needs to run before the bind mount as that changes the libs required by git to run properly
 # and risks host curruption.
-git clone https://github.com/keylase/nvidia-patch.git
+clone_repo() {
+    echo "[INFO] Cloning nvidia patch script"
+    git clone https://github.com/keylase/nvidia-patch.git
+}
 
 # Needs to run before the patch script as we need write access to libs.
-mount --bind /run/nvidia/driver/usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
+bind_mount() {
+    echo "[INFO] mounting nvidia libraries"
+    mount --bind /mnt/nvidia/driver/usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
+}
 
-./nvidia-patch/patch.sh
+bind_unmount() {
+    echo '[INFO] restoring original libraries'
+    umount /usr/lib/x86_64-linux-gnu
+}
 
-echo "Done, now waiting for signal"
-sleep infinity &
-trap "echo 'Caught signal'; { kill $!; exit 0; }" HUP INT QUIT PIPE TERM
-trap - EXIT
-while true; do wait $! || continue; done
-exit 0
+patch_driver() {
+    echo '[INFO] patching NVENC driver'
+    ./nvidia-patch/patch.sh
+    touch $PATCH_MARKER
+}
+
+cleanup() {
+    echo "[INFO] Caught termination signal. Exiting..."
+    kill -KILL "$pid" 2>/dev/null
+    exit 0
+}
+trap cleanup HUP INT QUIT PIPE TERM
+
+
+init() {
+    clone_repo
+    bind_mount
+    patch_driver
+    echo "[INFO] Sleeping to keep pod alive..."
+    sleep infinity &
+    pid=$!
+    wait
+}
+
+init

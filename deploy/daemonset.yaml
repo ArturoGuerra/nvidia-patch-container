@@ -27,7 +27,7 @@ spec:
           name: nvidia-driver-patcher
           volumeMounts:
             - name: run-nvidia
-              mountPath: /run/nvidia
+              mountPath: /mnt/nvidia
               mountPropagation: Bidirectional
               readOnly: false
             - name: libnvidia-backup
@@ -36,6 +36,24 @@ spec:
               readOnly: false
           securityContext:
             privileged: true
+          readinessProbe:
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            failureThreshold: 10
+            exec:
+              command:
+                - "test"
+                - "-f"
+                - "/mnt/nvidia/driver/.patched-marker"
+          livenessProbe:
+            initialDelaySeconds: 1
+            periodSeconds: 1
+            failureThreshold: 1
+            exec:
+              command:
+                - "test"
+                - "-f"
+                - "/mnt/nvidia/driver/.patched-marker"
       nodeSelector:
         nvidia.com/gpu.deploy.driver: "true"
       tolerations:
